@@ -517,7 +517,7 @@ dependencies = [
 [[package]]
 name = "quinn"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#55d601444acd8f224f6c83e329e90136f05b2f99"
+source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#b686e5785a1acb8378bbdc4189280ee1c1c53a73"
 dependencies = [
  "bytes",
  "cfg_aliases",
@@ -536,7 +536,7 @@ dependencies = [
 [[package]]
 name = "quinn-proto"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#55d601444acd8f224f6c83e329e90136f05b2f99"
+source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#b686e5785a1acb8378bbdc4189280ee1c1c53a73"
 dependencies = [
  "bytes",
  "fastbloom",
@@ -558,7 +558,7 @@ dependencies = [
 [[package]]
 name = "quinn-udp"
 version = "0.6.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#55d601444acd8f224f6c83e329e90136f05b2f99"
+source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#b686e5785a1acb8378bbdc4189280ee1c1c53a73"
 dependencies = [
  "cfg_aliases",
  "libc",
