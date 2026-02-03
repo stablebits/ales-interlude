@@ -387,6 +387,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -517,7 +523,7 @@ dependencies = [
 [[package]]
 name = "quinn"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#83e04d6945e87e98fc0dc16065806386065fbe2e"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#cd2f7989d033fb06b51c2dc4d9f53d45d884a756"
 dependencies = [
  "bytes",
  "cfg_aliases",
@@ -536,12 +542,13 @@ dependencies = [
 [[package]]
 name = "quinn-proto"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#83e04d6945e87e98fc0dc16065806386065fbe2e"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#cd2f7989d033fb06b51c2dc4d9f53d45d884a756"
 dependencies = [
  "bytes",
  "fastbloom",
  "getrandom 0.3.4",
  "lru-slab",
+ "nohash-hasher",
  "rand",
  "ring",
  "rustc-hash",
@@ -558,7 +565,7 @@ dependencies = [
 [[package]]
 name = "quinn-udp"
 version = "0.6.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=accept_uni_and_read_to_end-v2#83e04d6945e87e98fc0dc16065806386065fbe2e"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#cd2f7989d033fb06b51c2dc4d9f53d45d884a756"
 dependencies = [
  "cfg_aliases",
  "libc",
