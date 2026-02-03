@@ -5,7 +5,10 @@ use std::{
     array,
     env,
     net::{IpAddr, Ipv6Addr, SocketAddr},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
     time::Duration,
 };
 
@@ -52,6 +55,24 @@ async fn main() {
 
     let server = Endpoint::server(server_config, addr).unwrap();
 
+    let stream_count = Arc::new(AtomicU64::new(0));
+
+    // Spawn background task to print stats every 10 seconds
+    {
+        let stream_count = stream_count.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
+            let mut last_count = 0u64;
+            loop {
+                interval.tick().await;
+                let count = stream_count.load(Ordering::Relaxed);
+                let delta = count - last_count;
+                eprintln!("Total streams processed: {count} (+{delta} in last 10s)");
+                last_count = count;
+            }
+        });
+    }
+
     loop {
         eprintln!("waiting for connection");
         let Some(connecting) = server.accept().await else {
@@ -61,43 +82,46 @@ async fn main() {
         let conn = connecting.await.unwrap();
 
         match mode {
-            Mode::Old => handle_connection_old(conn).await,
-            Mode::New => handle_connection_new(conn).await,
+            Mode::Old => handle_connection_old(conn, stream_count.clone()).await,
+            Mode::New => handle_connection_new(conn, stream_count.clone()).await,
         }
     }
 }
 
-async fn handle_connection_old(conn: Connection) {
+async fn handle_connection_old(conn: Connection, stream_count: Arc<AtomicU64>) {
     let mut chunks: [Bytes; 4] = array::from_fn(|_| Bytes::new());
     tokio::task::spawn(async move {
         loop {
             match conn.accept_uni().await {
-                Ok(mut recv_stream) => loop {
-                    match recv_stream.read_chunks(&mut chunks).await {
-                        Ok(n) => {
-                            if n.is_none() {
+                Ok(mut recv_stream) => {
+                    loop {
+                        match recv_stream.read_chunks(&mut chunks).await {
+                            Ok(n) => {
+                                if n.is_none() {
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("error reading stream {e:?}");
                                 break;
                             }
                         }
-                        Err(e) => {
-                            eprintln!("error reading stream {e:?}");
-                            break;
-                        }
                     }
-                },
+                    stream_count.fetch_add(1, Ordering::Relaxed);
+                }
                 Err(_) => break,
             }
         }
     });
 }
 
-async fn handle_connection_new(conn: Connection) {
+async fn handle_connection_new(conn: Connection, stream_count: Arc<AtomicU64>) {
     tokio::task::spawn(async move {
         let mut data = Vec::with_capacity(4);
         loop {
             match conn.accept_any_complete_uni_with_data(&mut data).await {
                 Ok(_) => {
-                    // Stream data received successfully
+                    stream_count.fetch_add(1, Ordering::Relaxed);
                 }
                 Err(_) => break,
             }
