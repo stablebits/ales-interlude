@@ -8,9 +8,7 @@ debug = 2
 
 [dependencies]
 bytes = "1.11.0"
-#quinn = "0.11.9"
-quinn= {git = "https://github.com/Perelyn-sama/quinn.git", branch = "improve-recvstream-drop"}
-#quinn = { path = "../quinn/quinn" }
+quinn = { git = "https://github.com/stablebits/quinn.git", branch = "accept_uni_and_read_to_end-v2" }
 rcgen = "0.14.5"
 rustls = "0.23.35"
 tokio = { version = "1.48.0", features = ["full"] }

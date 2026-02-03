@@ -3,13 +3,27 @@ use quinn::{Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, Va
 use rustls::pki_types::PrivateKeyDer;
 use std::{
     array,
+    env,
     net::{IpAddr, Ipv6Addr, SocketAddr},
     sync::Arc,
     time::Duration,
 };
 
+#[derive(Clone, Copy, PartialEq)]
+enum Mode {
+    Old,
+    New,
+}
+
 #[tokio::main]
 async fn main() {
+    let mode = if env::args().any(|arg| arg == "--new") {
+        eprintln!("Using new accept_any_complete_uni_with_data mode");
+        Mode::New
+    } else {
+        eprintln!("Using old accept_uni + read_chunks mode");
+        Mode::Old
+    };
     let mut transport_config = TransportConfig::default();
 
     let timeout = IdleTimeout::try_from(Duration::from_secs(10)).unwrap();
@@ -46,11 +60,14 @@ async fn main() {
         eprintln!("accepted connection");
         let conn = connecting.await.unwrap();
 
-        handle_connection(conn).await;
+        match mode {
+            Mode::Old => handle_connection_old(conn).await,
+            Mode::New => handle_connection_new(conn).await,
+        }
     }
 }
 
-async fn handle_connection(conn: Connection) {
+async fn handle_connection_old(conn: Connection) {
     let mut chunks: [Bytes; 4] = array::from_fn(|_| Bytes::new());
     tokio::task::spawn(async move {
         loop {
@@ -68,6 +85,20 @@ async fn handle_connection(conn: Connection) {
                         }
                     }
                 },
+                Err(_) => break,
+            }
+        }
+    });
+}
+
+async fn handle_connection_new(conn: Connection) {
+    tokio::task::spawn(async move {
+        let mut data = Vec::with_capacity(4);
+        loop {
+            match conn.accept_any_complete_uni_with_data(&mut data).await {
+                Ok(_) => {
+                    // Stream data received successfully
+                }
                 Err(_) => break,
             }
         }
