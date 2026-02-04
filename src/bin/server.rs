@@ -55,24 +55,6 @@ async fn main() {
 
     let server = Endpoint::server(server_config, addr).unwrap();
 
-    let stream_count = Arc::new(AtomicU64::new(0));
-
-    // Spawn background task to print stats every 10 seconds
-    {
-        let stream_count = stream_count.clone();
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(10));
-            let mut last_count = 0u64;
-            loop {
-                interval.tick().await;
-                let count = stream_count.load(Ordering::Relaxed);
-                let delta = count - last_count;
-                eprintln!("Total streams processed: {count} (+{delta} in last 10s)");
-                last_count = count;
-            }
-        });
-    }
-
     loop {
         eprintln!("waiting for connection");
         let Some(connecting) = server.accept().await else {
@@ -82,13 +64,31 @@ async fn main() {
         let conn = connecting.await.unwrap();
 
         match mode {
-            Mode::Old => handle_connection_old(conn, stream_count.clone()).await,
-            Mode::New => handle_connection_new(conn, stream_count.clone()).await,
+            Mode::Old => handle_connection_old(conn).await,
+            Mode::New => handle_connection_new(conn).await,
         }
     }
 }
 
-async fn handle_connection_old(conn: Connection, stream_count: Arc<AtomicU64>) {
+async fn handle_connection_old(conn: Connection) {
+    let stream_count = Arc::new(AtomicU64::new(0));
+
+    // Spawn stats printer
+    {
+        let stream_count = stream_count.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
+            let mut last_count = 0u64;
+            loop {
+                interval.tick().await;
+                let count = stream_count.load(Ordering::Relaxed);
+                let delta = count - last_count;
+                eprintln!("Streams: {count} (+{delta} in last 10s)");
+                last_count = count;
+            }
+        });
+    }
+
     let mut chunks: [Bytes; 4] = array::from_fn(|_| Bytes::new());
     tokio::task::spawn(async move {
         loop {
@@ -115,7 +115,35 @@ async fn handle_connection_old(conn: Connection, stream_count: Arc<AtomicU64>) {
     });
 }
 
-async fn handle_connection_new(conn: Connection, stream_count: Arc<AtomicU64>) {
+async fn handle_connection_new(conn: Connection) {
+    let stream_count = Arc::new(AtomicU64::new(0));
+
+    // Spawn stats printer with poll stats
+    {
+        let stream_count = stream_count.clone();
+        let conn = conn.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(10));
+            let mut last_count = 0u64;
+            loop {
+                interval.tick().await;
+                let count = stream_count.load(Ordering::Relaxed);
+                let delta = count - last_count;
+                let stats = conn.accept_complete_poll_stats();
+                let efficiency = if stats.total > 0 {
+                    100.0 * stats.success as f64 / stats.total as f64
+                } else {
+                    0.0
+                };
+                eprintln!(
+                    "Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}%",
+                    stats.total, stats.success, stats.pending, efficiency
+                );
+                last_count = count;
+            }
+        });
+    }
+
     tokio::task::spawn(async move {
         let mut data = Vec::with_capacity(4);
         loop {
