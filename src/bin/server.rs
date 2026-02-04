@@ -90,20 +90,10 @@ async fn handle_connection_old(conn: Connection) {
                 } else {
                     0.0
                 };
-                let avg_success_lock = if stats.success > 0 {
-                    stats.success_lock_wait_us / stats.success
-                } else {
-                    0
-                };
-                let avg_pending_lock = if stats.pending > 0 {
-                    stats.pending_lock_wait_us / stats.pending
-                } else {
-                    0
-                };
                 eprintln!(
-                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us/call, pending={}us/call",
+                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us, pending={}us",
                     stats.total, stats.success, stats.pending, efficiency,
-                    avg_success_lock, avg_pending_lock
+                    stats.success_lock_wait_us, stats.pending_lock_wait_us
                 );
                 last_count = count;
             }
@@ -156,20 +146,10 @@ async fn handle_connection_new(conn: Connection) {
                 } else {
                     0.0
                 };
-                let avg_success_lock = if stats.success > 0 {
-                    stats.success_lock_wait_us / stats.success
-                } else {
-                    0
-                };
-                let avg_pending_lock = if stats.pending > 0 {
-                    stats.pending_lock_wait_us / stats.pending
-                } else {
-                    0
-                };
                 eprintln!(
-                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us/call, pending={}us/call",
+                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us, pending={}us",
                     stats.total, stats.success, stats.pending, efficiency,
-                    avg_success_lock, avg_pending_lock
+                    stats.success_lock_wait_us, stats.pending_lock_wait_us
                 );
                 last_count = count;
             }
