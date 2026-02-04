@@ -90,15 +90,20 @@ async fn handle_connection_old(conn: Connection) {
                 } else {
                     0.0
                 };
-                let avg_lock_wait = if stats.pending > 0 {
+                let avg_success_lock = if stats.success > 0 {
+                    stats.success_lock_wait_us / stats.success
+                } else {
+                    0
+                };
+                let avg_pending_lock = if stats.pending > 0 {
                     stats.pending_lock_wait_us / stats.pending
                 } else {
                     0
                 };
                 eprintln!(
-                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock wait: {}us total, {}us/pending",
+                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us/call, pending={}us/call",
                     stats.total, stats.success, stats.pending, efficiency,
-                    stats.pending_lock_wait_us, avg_lock_wait
+                    avg_success_lock, avg_pending_lock
                 );
                 last_count = count;
             }
@@ -151,15 +156,20 @@ async fn handle_connection_new(conn: Connection) {
                 } else {
                     0.0
                 };
-                let avg_lock_wait = if stats.pending > 0 {
+                let avg_success_lock = if stats.success > 0 {
+                    stats.success_lock_wait_us / stats.success
+                } else {
+                    0
+                };
+                let avg_pending_lock = if stats.pending > 0 {
                     stats.pending_lock_wait_us / stats.pending
                 } else {
                     0
                 };
                 eprintln!(
-                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock wait: {}us total, {}us/pending",
+                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us/call, pending={}us/call",
                     stats.total, stats.success, stats.pending, efficiency,
-                    stats.pending_lock_wait_us, avg_lock_wait
+                    avg_success_lock, avg_pending_lock
                 );
                 last_count = count;
             }

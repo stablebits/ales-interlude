@@ -523,7 +523,7 @@ dependencies = [
 [[package]]
 name = "quinn"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=optimize#eb291cb2383c08edbf4dc062a152d3db6475a6ea"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#55a7438f1109b99fd69ca1a46bc7ac62fd342d93"
 dependencies = [
  "bytes",
  "cfg_aliases",
@@ -543,7 +543,7 @@ dependencies = [
 [[package]]
 name = "quinn-proto"
 version = "0.12.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=optimize#eb291cb2383c08edbf4dc062a152d3db6475a6ea"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#55a7438f1109b99fd69ca1a46bc7ac62fd342d93"
 dependencies = [
  "bytes",
  "fastbloom",
@@ -566,7 +566,7 @@ dependencies = [
 [[package]]
 name = "quinn-udp"
 version = "0.6.0"
-source = "git+https://github.com/stablebits/quinn.git?branch=optimize#eb291cb2383c08edbf4dc062a152d3db6475a6ea"
+source = "git+https://github.com/stablebits/quinn.git?branch=optimize#55a7438f1109b99fd69ca1a46bc7ac62fd342d93"
 dependencies = [
  "cfg_aliases",
  "libc",
