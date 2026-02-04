@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use quinn::{AcceptCompletePollStats, Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, VarInt};
+use quinn::{Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, VarInt};
 use rustls::pki_types::PrivateKeyDer;
 use std::{
     array,
@@ -73,34 +73,18 @@ async fn main() {
 async fn handle_connection_old(conn: Connection) {
     let stream_count = Arc::new(AtomicU64::new(0));
 
-    // Spawn stats printer with poll stats
+    // Spawn stats printer
     {
         let stream_count = stream_count.clone();
-        let conn = conn.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
-            let mut last_stats = AcceptCompletePollStats::default();
             loop {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
-                let stream_delta = count - last_count;
-                let stats = conn.accept_complete_poll_stats();
-                let delta = stats - last_stats;
-                let efficiency = if delta.total > 0 {
-                    100.0 * delta.success as f64 / delta.total as f64
-                } else {
-                    0.0
-                };
-                eprintln!(
-                    "[OLD] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}%",
-                    stats.total, delta.total,
-                    stats.success, delta.success,
-                    stats.pending, delta.pending,
-                    efficiency
-                );
+                let delta = count - last_count;
+                eprintln!("[OLD] Streams/10s: {delta}");
                 last_count = count;
-                last_stats = stats;
             }
         });
     }
@@ -134,34 +118,18 @@ async fn handle_connection_old(conn: Connection) {
 async fn handle_connection_new(conn: Connection) {
     let stream_count = Arc::new(AtomicU64::new(0));
 
-    // Spawn stats printer with poll stats
+    // Spawn stats printer
     {
         let stream_count = stream_count.clone();
-        let conn = conn.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
-            let mut last_stats = AcceptCompletePollStats::default();
             loop {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
-                let stream_delta = count - last_count;
-                let stats = conn.accept_complete_poll_stats();
-                let delta = stats - last_stats;
-                let efficiency = if delta.total > 0 {
-                    100.0 * delta.success as f64 / delta.total as f64
-                } else {
-                    0.0
-                };
-                eprintln!(
-                    "[NEW] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}%",
-                    stats.total, delta.total,
-                    stats.success, delta.success,
-                    stats.pending, delta.pending,
-                    efficiency
-                );
+                let delta = count - last_count;
+                eprintln!("[NEW] Streams/10s: {delta}");
                 last_count = count;
-                last_stats = stats;
             }
         });
     }
