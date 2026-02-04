@@ -1,3 +1,6 @@
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 use bytes::Bytes;
 use quinn::{Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, VarInt};
 use rustls::pki_types::PrivateKeyDer;
