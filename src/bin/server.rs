@@ -73,9 +73,10 @@ async fn main() {
 async fn handle_connection_old(conn: Connection) {
     let stream_count = Arc::new(AtomicU64::new(0));
 
-    // Spawn stats printer
+    // Spawn stats printer with poll stats
     {
         let stream_count = stream_count.clone();
+        let conn = conn.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
@@ -83,7 +84,22 @@ async fn handle_connection_old(conn: Connection) {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
                 let delta = count - last_count;
-                eprintln!("Streams: {count} (+{delta} in last 10s)");
+                let stats = conn.accept_complete_poll_stats();
+                let efficiency = if stats.total > 0 {
+                    100.0 * stats.success as f64 / stats.total as f64
+                } else {
+                    0.0
+                };
+                let avg_lock_wait = if stats.pending > 0 {
+                    stats.pending_lock_wait_us / stats.pending
+                } else {
+                    0
+                };
+                eprintln!(
+                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock wait: {}us total, {}us/pending",
+                    stats.total, stats.success, stats.pending, efficiency,
+                    stats.pending_lock_wait_us, avg_lock_wait
+                );
                 last_count = count;
             }
         });
@@ -135,9 +151,15 @@ async fn handle_connection_new(conn: Connection) {
                 } else {
                     0.0
                 };
+                let avg_lock_wait = if stats.pending > 0 {
+                    stats.pending_lock_wait_us / stats.pending
+                } else {
+                    0
+                };
                 eprintln!(
-                    "Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}%",
-                    stats.total, stats.success, stats.pending, efficiency
+                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock wait: {}us total, {}us/pending",
+                    stats.total, stats.success, stats.pending, efficiency,
+                    stats.pending_lock_wait_us, avg_lock_wait
                 );
                 last_count = count;
             }
