@@ -93,13 +93,11 @@ async fn handle_connection_old(conn: Connection) {
                     0.0
                 };
                 eprintln!(
-                    "[OLD] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}% | Lock: success={}us(+{}), pending={}us(+{})",
+                    "[OLD] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}%",
                     stats.total, delta.total,
                     stats.success, delta.success,
                     stats.pending, delta.pending,
-                    efficiency,
-                    stats.success_lock_wait_us, delta.success_lock_wait_us,
-                    stats.pending_lock_wait_us, delta.pending_lock_wait_us
+                    efficiency
                 );
                 last_count = count;
                 last_stats = stats;
@@ -156,13 +154,11 @@ async fn handle_connection_new(conn: Connection) {
                     0.0
                 };
                 eprintln!(
-                    "[NEW] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}% | Lock: success={}us(+{}), pending={}us(+{})",
+                    "[NEW] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}%",
                     stats.total, delta.total,
                     stats.success, delta.success,
                     stats.pending, delta.pending,
-                    efficiency,
-                    stats.success_lock_wait_us, delta.success_lock_wait_us,
-                    stats.pending_lock_wait_us, delta.pending_lock_wait_us
+                    efficiency
                 );
                 last_count = count;
                 last_stats = stats;
