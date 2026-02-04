@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use quinn::{Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, VarInt};
+use quinn::{AcceptCompletePollStats, Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, VarInt};
 use rustls::pki_types::PrivateKeyDer;
 use std::{
     array,
@@ -80,22 +80,29 @@ async fn handle_connection_old(conn: Connection) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
+            let mut last_stats = AcceptCompletePollStats::default();
             loop {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
-                let delta = count - last_count;
+                let stream_delta = count - last_count;
                 let stats = conn.accept_complete_poll_stats();
-                let efficiency = if stats.total > 0 {
-                    100.0 * stats.success as f64 / stats.total as f64
+                let delta = stats - last_stats;
+                let efficiency = if delta.total > 0 {
+                    100.0 * delta.success as f64 / delta.total as f64
                 } else {
                     0.0
                 };
                 eprintln!(
-                    "[OLD] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us, pending={}us",
-                    stats.total, stats.success, stats.pending, efficiency,
-                    stats.success_lock_wait_us, stats.pending_lock_wait_us
+                    "[OLD] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}% | Lock: success={}us(+{}), pending={}us(+{})",
+                    stats.total, delta.total,
+                    stats.success, delta.success,
+                    stats.pending, delta.pending,
+                    efficiency,
+                    stats.success_lock_wait_us, delta.success_lock_wait_us,
+                    stats.pending_lock_wait_us, delta.pending_lock_wait_us
                 );
                 last_count = count;
+                last_stats = stats;
             }
         });
     }
@@ -136,22 +143,29 @@ async fn handle_connection_new(conn: Connection) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
+            let mut last_stats = AcceptCompletePollStats::default();
             loop {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
-                let delta = count - last_count;
+                let stream_delta = count - last_count;
                 let stats = conn.accept_complete_poll_stats();
-                let efficiency = if stats.total > 0 {
-                    100.0 * stats.success as f64 / stats.total as f64
+                let delta = stats - last_stats;
+                let efficiency = if delta.total > 0 {
+                    100.0 * delta.success as f64 / delta.total as f64
                 } else {
                     0.0
                 };
                 eprintln!(
-                    "[NEW] Streams: {count} (+{delta}) | Polls: total={}, success={}, pending={} | Efficiency: {:.1}% | Lock: success={}us, pending={}us",
-                    stats.total, stats.success, stats.pending, efficiency,
-                    stats.success_lock_wait_us, stats.pending_lock_wait_us
+                    "[NEW] Streams: {count} (+{stream_delta}) | Polls: {}(+{}), success: {}(+{}), pending: {}(+{}) | Efficiency: {:.1}% | Lock: success={}us(+{}), pending={}us(+{})",
+                    stats.total, delta.total,
+                    stats.success, delta.success,
+                    stats.pending, delta.pending,
+                    efficiency,
+                    stats.success_lock_wait_us, delta.success_lock_wait_us,
+                    stats.pending_lock_wait_us, delta.pending_lock_wait_us
                 );
                 last_count = count;
+                last_stats = stats;
             }
         });
     }
