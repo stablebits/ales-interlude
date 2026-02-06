@@ -8,7 +8,8 @@ debug = 2
 
 [dependencies]
 bytes = "1.11.0"
-quinn = { git = "https://github.com/stablebits/quinn.git", branch = "optimize" }
+quinn = { git = "https://github.com/stablebits/quinn.git", branch = "main" }
+# quinn = { git = "https://github.com/stablebits/quinn.git", branch = "nohash-hasher-for-stream-maps" }
 rcgen = "0.14.5"
 rustls = "0.23.35"
 tikv-jemallocator = "0.6"

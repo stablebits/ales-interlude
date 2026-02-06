@@ -32,8 +32,6 @@ async fn main() {
 }
 
 async fn send_streams(client: Arc<Endpoint>, client_config: ClientConfig, server_addr: SocketAddr) {
-    let streams = 20_000; // 2m streams
-
     let mut tasks = Vec::new();
     for _ in 0..8 {
         let client = client.clone();

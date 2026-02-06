@@ -6,7 +6,6 @@ use quinn::{Connection, Endpoint, IdleTimeout, ServerConfig, TransportConfig, Va
 use rustls::pki_types::PrivateKeyDer;
 use std::{
     array,
-    env,
     net::{IpAddr, Ipv6Addr, SocketAddr},
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -15,21 +14,8 @@ use std::{
     time::Duration,
 };
 
-#[derive(Clone, Copy, PartialEq)]
-enum Mode {
-    Old,
-    New,
-}
-
 #[tokio::main]
 async fn main() {
-    let mode = if env::args().any(|arg| arg == "--new") {
-        eprintln!("Using new accept_any_complete_uni_with_data mode");
-        Mode::New
-    } else {
-        eprintln!("Using old accept_uni + read_chunks mode");
-        Mode::Old
-    };
     let mut transport_config = TransportConfig::default();
 
     let timeout = IdleTimeout::try_from(Duration::from_secs(10)).unwrap();
@@ -63,7 +49,6 @@ async fn main() {
     // Spawn global stats printer
     {
         let stream_count = stream_count.clone();
-        let mode_str = if mode == Mode::New { "NEW" } else { "OLD" };
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(10));
             let mut last_count = 0u64;
@@ -71,7 +56,7 @@ async fn main() {
                 interval.tick().await;
                 let count = stream_count.load(Ordering::Relaxed);
                 let delta = count - last_count;
-                eprintln!("[{mode_str}] Streams/10s: {delta}");
+                eprintln!("Streams/10s: {delta}");
                 last_count = count;
             }
         });
@@ -85,14 +70,11 @@ async fn main() {
         eprintln!("accepted connection");
         let conn = connecting.await.unwrap();
 
-        match mode {
-            Mode::Old => handle_connection_old(conn, stream_count.clone()).await,
-            Mode::New => handle_connection_new(conn, stream_count.clone()).await,
-        }
+        handle_connection(conn, stream_count.clone()).await;
     }
 }
 
-async fn handle_connection_old(conn: Connection, stream_count: Arc<AtomicU64>) {
+async fn handle_connection(conn: Connection, stream_count: Arc<AtomicU64>) {
     let mut chunks: [Bytes; 4] = array::from_fn(|_| Bytes::new());
     tokio::task::spawn(async move {
         loop {
@@ -111,20 +93,6 @@ async fn handle_connection_old(conn: Connection, stream_count: Arc<AtomicU64>) {
                             }
                         }
                     }
-                    stream_count.fetch_add(1, Ordering::Relaxed);
-                }
-                Err(_) => break,
-            }
-        }
-    });
-}
-
-async fn handle_connection_new(conn: Connection, stream_count: Arc<AtomicU64>) {
-    tokio::task::spawn(async move {
-        let mut data = Vec::with_capacity(4);
-        loop {
-            match conn.accept_any_complete_uni_with_data(&mut data).await {
-                Ok(_) => {
                     stream_count.fetch_add(1, Ordering::Relaxed);
                 }
                 Err(_) => break,
